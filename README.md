@@ -1,6 +1,6 @@
-# Building a Remote MCP Server on Cloudflare (Without Auth)
+# Building a Remote MCP Server on Cloudflare (With API Key Authentication)
 
-This example allows you to deploy a remote MCP server that doesn't require authentication on Cloudflare Workers. 
+This example allows you to deploy a remote MCP server with API key authentication on Cloudflare Workers. The server now requires a valid API key to access the MCP tools, providing better security for your deployment.
 
 ## Get started: 
 
@@ -13,6 +13,33 @@ Alternatively, you can use the command line below to get the remote MCP Server c
 npm create cloudflare@latest -- my-mcp-server --template=cloudflare/ai/demos/remote-mcp-authless
 ```
 
+## API Key Authentication
+
+The MCP server now includes API key authentication. By default, the API key is set to `"password"`, but you can customize this by:
+
+1. **Environment Variable**: Set `MCP_API_KEY` in your Cloudflare Worker's environment variables
+2. **Wrangler Config**: Modify the `vars.MCP_API_KEY` value in `wrangler.jsonc`
+
+### Setting a Custom API Key
+
+To set a custom API key, update the `wrangler.jsonc` file:
+
+```json
+{
+  "vars": {
+    "MCP_API_KEY": "your-secure-api-key-here"
+  }
+}
+```
+
+### Authentication Methods
+
+The server accepts API keys via multiple methods:
+
+- **Authorization Header**: `Authorization: Bearer your-api-key`
+- **X-API-Key Header**: `X-API-Key: your-api-key`
+- **Query Parameter**: `?api_key=your-api-key`
+
 ## Customizing your MCP Server
 
 To add your own [tools](https://developers.cloudflare.com/agents/model-context-protocol/tools/) to the MCP server, define each tool inside the `init()` method of `src/index.ts` using `this.server.tool(...)`. 
@@ -23,7 +50,8 @@ You can connect to your MCP server from the Cloudflare AI Playground, which is a
 
 1. Go to https://playground.ai.cloudflare.com/
 2. Enter your deployed MCP server URL (`remote-mcp-server-authless.<your-account>.workers.dev/sse`)
-3. You can now use your MCP tools directly from the playground!
+3. Provide your API key when prompted
+4. You can now use your MCP tools directly from the playground!
 
 ## Connect Claude Desktop to your MCP server
 
@@ -40,11 +68,26 @@ Update with this configuration:
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://localhost:8787/sse"  // or remote-mcp-server-authless.your-account.workers.dev/sse
+        "http://localhost:8787/sse",  // or remote-mcp-server-authless.your-account.workers.dev/sse
+        "password"  // Replace with your actual API key
       ]
     }
   }
 }
 ```
 
-Restart Claude and you should see the tools become available. 
+**Note**: The third argument in the `args` array is your API key. Make sure to replace `"password"` with your actual API key.
+
+Restart Claude and you should see the tools become available after authentication.
+
+## Health Check
+
+You can check if your server is running by visiting the root endpoint:
+- `GET /` or `GET /health` - Returns server status (no authentication required)
+
+## Security Features
+
+- All MCP endpoints (`/sse`, `/mcp`) now require valid API key authentication
+- Multiple authentication methods supported for flexibility
+- Configurable API keys via environment variables
+- Health check endpoint remains publicly accessible
